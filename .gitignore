@@ -1,0 +1,11 @@
+# Java compiled files
+*.class
+
+# IDE folders
+.vscode/
+.idea/
+.settings/
+
+# OS junk
+.DS_Store
+Thumbs.db
