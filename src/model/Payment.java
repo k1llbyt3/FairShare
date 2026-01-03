@@ -1,12 +1,20 @@
 package model;
 
-public class Payment {
-    public String from, to;
-    public double amount;
+public class Payment extends Transaction {
+    private String from;
+    private String to;
 
-    public Payment(String f, String t, double a) {
-        from = f;
-        to = t;
-        amount = a;
+    public Payment(String from, String to, double amount) {
+        super(amount);
+        this.from = from;
+        this.to = to;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public String getTo() {
+        return to;
     }
 }

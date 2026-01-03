@@ -1,11 +1,23 @@
 package model;
 
 public class Balance {
-    public String name;
-    public double amount;
+    private String name;
+    private double amount;
 
-    public Balance(String n, double a) {
-        name = n;
-        amount = a;
+    public Balance(String name, double amount) {
+        this.name = name;
+        this.amount = amount;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(double amount) {
+        this.amount = amount;
     }
 }

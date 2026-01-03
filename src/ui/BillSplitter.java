@@ -10,15 +10,17 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
 import javax.swing.text.AbstractDocument;
+import logic.*;
 import model.*;
 import org.w3c.dom.events.MouseEvent;
 import theme.*;
 
-    public class BillSplitter extends JFrame {
+public class BillSplitter extends JFrame {
 
     private final ArrayList<String> participants;
     private final ArrayList<Expense> expenses;
     private final ArrayList<Payment> payments;
+    private final SettlementStrategy settlementStrategy;
     private final AppTheme theme;
 
     // UI Components
@@ -51,6 +53,7 @@ import theme.*;
         this.expenses = new ArrayList<>();
         this.payments = new ArrayList<>();
         this.participantChips = new ArrayList<>();
+        this.settlementStrategy = new StandardSettlementStrategy();
 
         setupWindow();
         setupUI();
@@ -81,58 +84,56 @@ import theme.*;
         add(mainSplit, BorderLayout.CENTER);
     }
 
-   private JPanel createHeader() {
-    JPanel header = new JPanel(new BorderLayout());
-    header.setBackground(theme.getPanelBackground());
-    header.setBorder(new EmptyBorder(20, 30, 20, 30));
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(theme.getPanelBackground());
+        header.setBorder(new EmptyBorder(20, 30, 20, 30));
 
-    // Trip name field with placeholder
-    tripNameField = new JTextField();
-    tripNameField.setFont(theme.getTitleFont());
-    tripNameField.setBackground(theme.getPanelBackground());
-    tripNameField.setForeground(theme.getTextMuted()); // placeholder color
-    tripNameField.setBorder(null);
-    tripNameField.setCaretColor(theme.getAccent());
+        // Trip name field with placeholder
+        tripNameField = new JTextField();
+        tripNameField.setFont(theme.getTitleFont());
+        tripNameField.setBackground(theme.getPanelBackground());
+        tripNameField.setForeground(theme.getTextMuted()); // placeholder color
+        tripNameField.setBorder(null);
+        tripNameField.setCaretColor(theme.getAccent());
 
-    // Placeholder text
-    final String PLACEHOLDER = "Trip (Rename)";
-    tripNameField.setText(PLACEHOLDER);
+        // Placeholder text
+        final String PLACEHOLDER = "Trip (Rename)";
+        tripNameField.setText(PLACEHOLDER);
 
-    // Width + limit
-    tripNameField.setColumns(26);
-    ((AbstractDocument) tripNameField.getDocument())
-            .setDocumentFilter(new LengthFilter(26));
+        // Width + limit
+        tripNameField.setColumns(26);
+        ((AbstractDocument) tripNameField.getDocument())
+                .setDocumentFilter(new LengthFilter(26));
 
-    // Placeholder behavior
-    tripNameField.addFocusListener(new FocusAdapter() {
-        @Override
-        public void focusGained(FocusEvent e) {
-            if (tripNameField.getText().equals(PLACEHOLDER)) {
-                tripNameField.setText("");
-                tripNameField.setForeground(theme.getAccent());
+        // Placeholder behavior
+        tripNameField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (tripNameField.getText().equals(PLACEHOLDER)) {
+                    tripNameField.setText("");
+                    tripNameField.setForeground(theme.getAccent());
+                }
             }
-        }
 
-        @Override
-        public void focusLost(FocusEvent e) {
-            if (tripNameField.getText().trim().isEmpty()) {
-                tripNameField.setText(PLACEHOLDER);
-                tripNameField.setForeground(theme.getTextMuted());
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (tripNameField.getText().trim().isEmpty()) {
+                    tripNameField.setText(PLACEHOLDER);
+                    tripNameField.setForeground(theme.getTextMuted());
+                }
             }
-        }
-    });
+        });
 
-    header.add(tripNameField, BorderLayout.WEST);
+        header.add(tripNameField, BorderLayout.WEST);
 
-    JLabel brand = new JLabel("FAIRSHARE");
-    brand.setFont(new Font("Segoe UI", Font.BOLD, 20));
-    brand.setForeground(theme.getTextMain());
-    header.add(brand, BorderLayout.EAST);
+        JLabel brand = new JLabel("FAIRSHARE");
+        brand.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        brand.setForeground(theme.getTextMain());
+        header.add(brand, BorderLayout.EAST);
 
-    return header;
-}
- 
-
+        return header;
+    }
 
     // --- LEFT PANEL ---
     private JPanel createInputPanel() {
@@ -338,7 +339,8 @@ import theme.*;
         gbc2.gridy++;
         paymentPanel.add(paymentAmountField, gbc2);
 
-        ModernButton btnAddPayment = new ModernButton("Record Payment", theme.getAccent(), theme.getAccent().darker(), Color.BLACK);
+        ModernButton btnAddPayment = new ModernButton("Record Payment", theme.getAccent(), theme.getAccent().darker(),
+                Color.BLACK);
         btnAddPayment.addActionListener(e -> addPayment());
         gbc2.gridy++;
         gbc2.insets = new Insets(20, 0, 0, 0);
@@ -367,19 +369,18 @@ import theme.*;
         tag.addActionListener(e -> descField.setText(text));
 
         tag.addMouseListener(new MouseAdapter() {
-        @SuppressWarnings("unused")
-        public void mouseEntered(MouseEvent e) {
-            tag.setForeground(theme.getAccent());
-            tag.setBorder(BorderFactory.createLineBorder(theme.getAccent()));
-        }
+            @SuppressWarnings("unused")
+            public void mouseEntered(MouseEvent e) {
+                tag.setForeground(theme.getAccent());
+                tag.setBorder(BorderFactory.createLineBorder(theme.getAccent()));
+            }
 
-         @SuppressWarnings("unused")
-        public void mouseExited(MouseEvent e) {
-             tag.setForeground(theme.getTextMuted());
-             tag.setBorder(BorderFactory.createLineBorder(theme.getBorderColor()));
-         }
+            @SuppressWarnings("unused")
+            public void mouseExited(MouseEvent e) {
+                tag.setForeground(theme.getTextMuted());
+                tag.setBorder(BorderFactory.createLineBorder(theme.getBorderColor()));
+            }
         });
-
 
         suggestionPanel.add(tag);
     }
@@ -396,7 +397,7 @@ import theme.*;
         tableWrap.setBorder(new LineBorder(theme.getBorderColor()));
         tableWrap.setPreferredSize(new Dimension(0, 300));
 
-        String[] cols = {"Payer", "Item", "Amount", "Mode", "Split"};
+        String[] cols = { "Payer", "Item", "Amount", "Mode", "Split" };
         expenseTableModel = new DefaultTableModel(cols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
@@ -414,7 +415,8 @@ import theme.*;
 
         tableWrap.add(tableScroll, BorderLayout.CENTER);
 
-        ModernButton btnRemove = new ModernButton("Delete", theme.getPanelBackground(), theme.getDanger(), theme.getDanger());
+        ModernButton btnRemove = new ModernButton("Delete", theme.getPanelBackground(), theme.getDanger(),
+                theme.getDanger());
         btnRemove.setHoverTextColor(Color.WHITE);
         btnRemove.addActionListener(e -> removeExpense(expenseTable));
         tableWrap.add(btnRemove, BorderLayout.SOUTH);
@@ -427,7 +429,7 @@ import theme.*;
         paymentTableWrap.setBorder(new LineBorder(theme.getBorderColor()));
         paymentTableWrap.setPreferredSize(new Dimension(0, 150));
 
-        String[] paymentCols = {"From", "To", "Amount"};
+        String[] paymentCols = { "From", "To", "Amount" };
         paymentTableModel = new DefaultTableModel(paymentCols, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
@@ -445,7 +447,8 @@ import theme.*;
 
         paymentTableWrap.add(paymentTableScroll, BorderLayout.CENTER);
 
-        ModernButton btnRemovePayment = new ModernButton("Delete Payment", theme.getPanelBackground(), theme.getDanger(), theme.getDanger());
+        ModernButton btnRemovePayment = new ModernButton("Delete Payment", theme.getPanelBackground(),
+                theme.getDanger(), theme.getDanger());
         btnRemovePayment.setHoverTextColor(Color.WHITE);
         btnRemovePayment.addActionListener(e -> removePayment(paymentTable));
         paymentTableWrap.add(btnRemovePayment, BorderLayout.SOUTH);
@@ -499,16 +502,16 @@ import theme.*;
 
         // Create a vertical container for payments table and results
         // Title for Payments Table
-JLabel paymentsLabel = new JLabel("Recorded Payments");
-paymentsLabel.setFont(theme.getHeaderFont());
-paymentsLabel.setForeground(theme.getAccent());
-paymentTableWrap.add(paymentsLabel, BorderLayout.NORTH);
+        JLabel paymentsLabel = new JLabel("Recorded Payments");
+        paymentsLabel.setFont(theme.getHeaderFont());
+        paymentsLabel.setForeground(theme.getAccent());
+        paymentTableWrap.add(paymentsLabel, BorderLayout.NORTH);
 
-// Better split so payments are visible immediately
-JSplitPane centerSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, paymentTableWrap, resultWrap);
-centerSplit.setResizeWeight(0.45); // show more of payment panel
-centerSplit.setDividerLocation(200); // ensure visible space
-centerSplit.setDividerSize(6);
+        // Better split so payments are visible immediately
+        JSplitPane centerSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, paymentTableWrap, resultWrap);
+        centerSplit.setResizeWeight(0.45); // show more of payment panel
+        centerSplit.setDividerLocation(200); // ensure visible space
+        centerSplit.setDividerSize(6);
 
         centerSplit.setDividerSize(5);
         centerSplit.setBorder(null);
@@ -525,7 +528,8 @@ centerSplit.setDividerSize(6);
         ModernButton btnCalc = new ModernButton("Calculate", theme.getPrimary(), theme.getPrimaryHover(), Color.BLACK);
         btnCalc.addActionListener(e -> calculateSettlement());
 
-        ModernButton btnLedger = new ModernButton("Details", theme.getAccent(), theme.getAccent().darker(), Color.BLACK);
+        ModernButton btnLedger = new ModernButton("Details", theme.getAccent(), theme.getAccent().darker(),
+                Color.BLACK);
         btnLedger.setHoverTextColor(Color.WHITE);
         btnLedger.addActionListener(e -> showDetailedLedger());
 
@@ -548,7 +552,8 @@ centerSplit.setDividerSize(6);
 
     private void addParticipant() {
         String name = participantField.getText().trim();
-        if (name.isEmpty() || name.equals("Name...")) return;
+        if (name.isEmpty() || name.equals("Name..."))
+            return;
 
         for (String p : participants) {
             if (p.equalsIgnoreCase(name)) {
@@ -599,8 +604,7 @@ centerSplit.setDividerSize(6);
             wrapper.setOpaque(false);
             wrapper.setBorder(BorderFactory.createCompoundBorder(
                     new LineBorder(theme.getBorderColor()),
-                    new EmptyBorder(5, 10, 5, 5)
-            ));
+                    new EmptyBorder(5, 10, 5, 5)));
             wrapper.setBackground(theme.getBackground());
             wrapper.add(participantItem);
 
@@ -615,14 +619,14 @@ centerSplit.setDividerSize(6);
         // Check if participant is involved in any expenses or payments
         boolean isInvolved = false;
         for (Expense e : expenses) {
-            if (e.payer.equals(name) || e.involved.contains(name)) {
+            if (e.getPayer().equals(name) || e.getInvolved().contains(name)) {
                 isInvolved = true;
                 break;
             }
         }
         if (!isInvolved) {
             for (Payment p : payments) {
-                if (p.from.equals(name) || p.to.equals(name)) {
+                if (p.getFrom().equals(name) || p.getTo().equals(name)) {
                     isInvolved = true;
                     break;
                 }
@@ -630,7 +634,8 @@ centerSplit.setDividerSize(6);
         }
 
         if (isInvolved) {
-            showCustomDialog("Cannot Remove", "Cannot remove member. They are involved in existing expenses or payments. Remove those first.");
+            showCustomDialog("Cannot Remove",
+                    "Cannot remove member. They are involved in existing expenses or payments. Remove those first.");
             return;
         }
 
@@ -662,7 +667,8 @@ centerSplit.setDividerSize(6);
 
     // Rebuild payment From/To dropdowns from participants list
     private void updatePaymentDropdowns() {
-        if (paymentFromDropdown == null || paymentToDropdown == null) return;
+        if (paymentFromDropdown == null || paymentToDropdown == null)
+            return;
 
         paymentFromDropdown.removeAllItems();
         for (String p : participants) {
@@ -673,7 +679,8 @@ centerSplit.setDividerSize(6);
 
     // Ensure To does not show the same person as From
     private void refreshPaymentToDropdown() {
-        if (paymentFromDropdown == null || paymentToDropdown == null) return;
+        if (paymentFromDropdown == null || paymentToDropdown == null)
+            return;
 
         String from = (String) paymentFromDropdown.getSelectedItem();
         paymentToDropdown.removeAllItems();
@@ -685,7 +692,8 @@ centerSplit.setDividerSize(6);
     }
 
     private void toggleChips(boolean select) {
-        for (ModernToggle chip : participantChips) chip.setSelected(select);
+        for (ModernToggle chip : participantChips)
+            chip.setSelected(select);
         chipsPanel.repaint();
     }
 
@@ -702,7 +710,8 @@ centerSplit.setDividerSize(6);
 
         List<String> involved = new ArrayList<>();
         for (ModernToggle chip : participantChips) {
-            if (chip.isSelected()) involved.add(chip.getText());
+            if (chip.isSelected())
+                involved.add(chip.getText());
         }
 
         if (payer == null || amtStr.isEmpty()) {
@@ -717,12 +726,13 @@ centerSplit.setDividerSize(6);
 
         try {
             double amount = Double.parseDouble(amtStr);
-            if (desc == null || desc.trim().isEmpty()) desc = "Misc";
+            if (desc == null || desc.trim().isEmpty())
+                desc = "Misc";
 
             expenses.add(new Expense(payer, amount, involved, mode, desc));
 
             String splitText = (involved.size() == participants.size()) ? "Everyone" : involved.size() + " Ppl";
-            expenseTableModel.addRow(new Object[]{payer, desc, String.format("₹ %.2f", amount), mode, splitText});
+            expenseTableModel.addRow(new Object[] { payer, desc, String.format("₹ %.2f", amount), mode, splitText });
 
             resizeColumnWidth(expenseTable);
             updateTotal();
@@ -774,7 +784,7 @@ centerSplit.setDividerSize(6);
 
             // Store payment
             payments.add(new Payment(from, to, amount));
-            paymentTableModel.addRow(new Object[]{from, to, String.format("₹ %.2f", amount)});
+            paymentTableModel.addRow(new Object[] { from, to, String.format("₹ %.2f", amount) });
             resizeColumnWidth(paymentTable);
 
             paymentAmountField.setText("");
@@ -785,20 +795,19 @@ centerSplit.setDividerSize(6);
     }
 
     private void removePayment(JTable table) {
-    int r = table.getSelectedRow();
-    if (r == -1) {
-        showCustomDialog("Select Row", "Please select a payment to delete.");
-        return;
+        int r = table.getSelectedRow();
+        if (r == -1) {
+            showCustomDialog("Select Row", "Please select a payment to delete.");
+            return;
+        }
+        // Always sync model + backend list
+        payments.remove(r);
+        paymentTableModel.removeRow(r);
+        table.clearSelection();
     }
-    // Always sync model + backend list
-    payments.remove(r);
-    paymentTableModel.removeRow(r);
-    table.clearSelection();
-}
-
 
     private void updateTotal() {
-        double t = expenses.stream().mapToDouble(e -> e.amount).sum();
+        double t = expenses.stream().mapToDouble(Expense::getAmount).sum();
         totalStatsLabel.setText(String.format("Total: ₹ %.2f", t));
     }
 
@@ -811,7 +820,8 @@ centerSplit.setDividerSize(6);
                 Component comp = table.prepareRenderer(renderer, row, column);
                 width = Math.max(comp.getPreferredSize().width + 10, width);
             }
-            if (width > 400) width = 400;
+            if (width > 400)
+                width = 400;
             columnModel.getColumn(column).setPreferredWidth(width);
         }
     }
@@ -839,19 +849,19 @@ centerSplit.setDividerSize(6);
 
         for (Expense e : expenses) {
             // Payer Info
-            paid.put(e.payer, paid.get(e.payer) + e.amount);
-            itemsPaid.get(e.payer).add(String.format("%s (₹%.0f, %s)", e.desc, e.amount, e.mode));
+            paid.put(e.getPayer(), paid.get(e.getPayer()) + e.getAmount());
+            itemsPaid.get(e.getPayer()).add(String.format("%s (₹%.0f, %s)", e.getDesc(), e.getAmount(), e.getMode()));
 
             // Consumer Info
-            double share = e.amount / e.involved.size();
-            for (String consumer : e.involved) {
+            double share = e.getAmount() / e.getInvolved().size();
+            for (String consumer : e.getInvolved()) {
                 consumed.put(consumer, consumed.get(consumer) + share);
-                itemsShared.get(consumer).add(String.format("%s (₹%.0f)", e.desc, share));
+                itemsShared.get(consumer).add(String.format("%s (₹%.0f)", e.getDesc(), share));
             }
         }
 
         // Columns showing Itemized Lists
-        String[] columns = {"Member", "Paid", "Items Paid For", "Fair Share", "Items Shared In", "Net", "Reasoning"};
+        String[] columns = { "Member", "Paid", "Items Paid For", "Fair Share", "Items Shared In", "Net", "Reasoning" };
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
@@ -883,12 +893,14 @@ centerSplit.setDividerSize(6);
 
             // Format Lists
             String listPaid = String.join(", ", itemsPaid.get(p));
-            if (listPaid.isEmpty()) listPaid = "-";
+            if (listPaid.isEmpty())
+                listPaid = "-";
 
             String listShared = String.join(", ", itemsShared.get(p));
-            if (listShared.isEmpty()) listShared = "-";
+            if (listShared.isEmpty())
+                listShared = "-";
 
-            model.addRow(new Object[]{
+            model.addRow(new Object[] {
                     p,
                     String.format("₹%.0f", pVal),
                     listPaid,
@@ -897,7 +909,8 @@ centerSplit.setDividerSize(6);
                     status,
                     reason
             });
-            copyBuffer.append(String.format("%s: %s | %s\n  > Paid For: %s\n  > Shared In: %s\n\n", p, status, reason, listPaid, listShared));
+            copyBuffer.append(String.format("%s: %s | %s\n  > Paid For: %s\n  > Shared In: %s\n\n", p, status, reason,
+                    listPaid, listShared));
         }
 
         JDialog dialog = new JDialog(this, "Details", true);
@@ -928,10 +941,12 @@ centerSplit.setDividerSize(6);
         JPanel btnP = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnP.setOpaque(false);
 
-        ModernButton copyBtn = new ModernButton("Copy Analysis", theme.getAccent(), theme.getAccent().darker(), Color.BLACK);
+        ModernButton copyBtn = new ModernButton("Copy Analysis", theme.getAccent(), theme.getAccent().darker(),
+                Color.BLACK);
         copyBtn.addActionListener(e -> copyToClipboard(copyBuffer.toString()));
 
-        ModernButton closeBtn = new ModernButton("Close", theme.getPanelBackground(), theme.getBorderColor(), theme.getTextMain());
+        ModernButton closeBtn = new ModernButton("Close", theme.getPanelBackground(), theme.getBorderColor(),
+                theme.getTextMain());
         closeBtn.addActionListener(e -> dialog.dispose());
 
         btnP.add(copyBtn);
@@ -943,127 +958,48 @@ centerSplit.setDividerSize(6);
     }
 
     private void calculateSettlement() {
+        String result = settlementStrategy.calculate(participants, expenses, payments, tripNameField.getText().trim());
 
-    if(participants.isEmpty()) {
-        showCustomDialog("Error", "Add members first.");
-        return;
-    }
-    if(expenses.isEmpty() && payments.isEmpty()) {
-        showCustomDialog("Error", "Add expenses or payments first.");
-        return;
-    }
-
-    Map<String, Double> balances = new HashMap<>();
-    for(String p : participants) balances.put(p, 0.0);
-
-    // Expense logic
-    for(Expense e : expenses) {
-        balances.put(e.payer, balances.get(e.payer) + e.amount);
-        double share = e.amount / e.involved.size();
-        for(String c : e.involved) {
-            balances.put(c, balances.get(c) - share);
+        if (result.startsWith("Error:")) {
+            showCustomDialog("Error", result.substring(7));
+            return;
         }
+
+        // Receipt popup
+        JDialog dialog = new JDialog(this, "Settlement Plan", true);
+        dialog.setSize(520, 520);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        JTextArea area = new JTextArea(result);
+        area.setEditable(false);
+        area.setBackground(theme.getPanelBackground());
+        area.setForeground(theme.getAccent());
+        area.setFont(new Font("Consolas", Font.PLAIN, 15));
+        area.setMargin(new Insets(20, 20, 20, 20));
+
+        JScrollPane scroll = new JScrollPane(area);
+        scroll.setBorder(new LineBorder(theme.getBorderColor(), 2));
+        scroll.getViewport().setBackground(theme.getPanelBackground());
+        dialog.add(scroll, BorderLayout.CENTER);
+
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btns.setOpaque(false);
+
+        ModernButton copy = new ModernButton("Copy", new Color(37, 211, 102), new Color(20, 180, 80), Color.BLACK);
+        copy.addActionListener(e -> copyToClipboard(result));
+
+        ModernButton close = new ModernButton("Close", theme.getPanelBackground(), theme.getBorderColor(),
+                theme.getTextMain());
+        close.addActionListener(e -> dialog.dispose());
+
+        btns.add(copy);
+        btns.add(close);
+        dialog.add(btns, BorderLayout.SOUTH);
+
+        dialog.getContentPane().setBackground(theme.getBackground());
+        dialog.setVisible(true);
     }
-
-    // Payment logic (A paid B → A gets credited)
-    for(Payment p : payments) {
-        balances.put(p.from, balances.get(p.from) + p.amount);
-        balances.put(p.to, balances.get(p.to) - p.amount);
-    }
-
-    List<Balance> debtors = new ArrayList<>();
-    List<Balance> creditors = new ArrayList<>();
-
-    for(Map.Entry<String, Double> e : balances.entrySet()) {
-        double v = e.getValue();
-        if(Math.abs(v) < 0.01) continue;
-        if(v < 0) debtors.add(new Balance(e.getKey(), Math.abs(v)));
-        else creditors.add(new Balance(e.getKey(), v));
-    }
-
-    debtors.sort((a,b)->Double.compare(b.amount,a.amount));
-    creditors.sort((a,b)->Double.compare(b.amount,a.amount));
-
-    double totalSpend = expenses.stream().mapToDouble(e -> e.amount).sum();
-    double equalShare = participants.isEmpty() ? 0 : totalSpend / participants.size();
-
-    String trip = tripNameField.getText().trim();
-    if(trip.isEmpty()) trip = "TRIP";
-    String tripName = trip.toUpperCase();
-
-    StringBuilder sb = new StringBuilder();
-    String line = "=====================================\n";
-
-    sb.append(line);
-    sb.append(String.format("             %s\n", tripName));
-    sb.append(line);
-    sb.append(String.format("Total Spent: ₹%.2f\n", totalSpend));
-    sb.append(String.format("People: %d\n", participants.size()));
-    sb.append(String.format("Per Person: ₹%.2f\n", equalShare));
-    sb.append(line);
-
-    if(debtors.isEmpty()) {
-        sb.append("\n🎉 Everyone is already settled!\n");
-    } else {
-        sb.append("\nWho Pays Whom:\n\n");
-
-        int i=0, j=0;
-        while(i < debtors.size() && j < creditors.size()) {
-            Balance d = debtors.get(i);
-            Balance c = creditors.get(j);
-
-            double amt = Math.min(d.amount, c.amount);
-
-            // Option 1 wording ✔️
-            sb.append(String.format("• %s pays %s ₹%.2f\n", d.name, c.name, amt));
-
-            d.amount -= amt;
-            c.amount -= amt;
-
-            if(d.amount < 0.01) i++;
-            if(c.amount < 0.01) j++;
-        }
-    }
-
-    sb.append("\n");
-    sb.append(line);
-
-    // Receipt popup
-    JDialog dialog = new JDialog(this, "Settlement Plan", true);
-    dialog.setSize(520, 520);
-    dialog.setLocationRelativeTo(this);
-    dialog.setLayout(new BorderLayout());
-
-    JTextArea area = new JTextArea(sb.toString());
-    area.setEditable(false);
-    area.setBackground(theme.getPanelBackground());
-    area.setForeground(theme.getAccent());
-    area.setFont(new Font("Consolas", Font.PLAIN, 15));
-    area.setMargin(new Insets(20, 20, 20, 20));
-
-    JScrollPane scroll = new JScrollPane(area);
-    scroll.setBorder(new LineBorder(theme.getBorderColor(), 2));
-    scroll.getViewport().setBackground(theme.getPanelBackground());
-    dialog.add(scroll, BorderLayout.CENTER);
-
-    JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    btns.setOpaque(false);
-
-    ModernButton copy = new ModernButton("Copy", new Color(37,211,102), new Color(20,180,80), Color.BLACK);
-    copy.addActionListener(e -> copyToClipboard(sb.toString()));
-
-    ModernButton close = new ModernButton("Close", theme.getPanelBackground(), theme.getBorderColor(), theme.getTextMain());
-    close.addActionListener(e -> dialog.dispose());
-
-    btns.add(copy);
-    btns.add(close);
-    dialog.add(btns, BorderLayout.SOUTH);
-
-    dialog.getContentPane().setBackground(theme.getBackground());
-    dialog.setVisible(true);
-}
-
-
 
     private void copyToClipboard(String text) {
         StringSelection s = new StringSelection(text);
@@ -1076,13 +1012,16 @@ centerSplit.setDividerSize(6);
         expenses.clear();
         payments.clear();
         payerDropdown.removeAllItems();
-        if (paymentFromDropdown != null) paymentFromDropdown.removeAllItems();
-        if (paymentToDropdown != null) paymentToDropdown.removeAllItems();
+        if (paymentFromDropdown != null)
+            paymentFromDropdown.removeAllItems();
+        if (paymentToDropdown != null)
+            paymentToDropdown.removeAllItems();
         participantChips.clear();
         chipsPanel.removeAll();
         chipsPanel.repaint();
         expenseTableModel.setRowCount(0);
-        if (paymentTableModel != null) paymentTableModel.setRowCount(0);
+        if (paymentTableModel != null)
+            paymentTableModel.setRowCount(0);
         settlementArea.setText("");
         totalStatsLabel.setText("Total: ₹ 0.00");
         updateParticipantsList();
@@ -1103,7 +1042,8 @@ centerSplit.setDividerSize(6);
         l.setForeground(theme.getTextMain());
         p.add(l, BorderLayout.CENTER);
 
-        ModernButton b = new ModernButton("OK", theme.getPanelBackground(), theme.getBorderColor(), theme.getTextMain());
+        ModernButton b = new ModernButton("OK", theme.getPanelBackground(), theme.getBorderColor(),
+                theme.getTextMain());
         b.addActionListener(e -> d.dispose());
 
         JPanel bp = new JPanel(new FlowLayout(FlowLayout.CENTER));
