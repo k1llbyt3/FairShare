@@ -5,6 +5,13 @@
 .vscode/
 .idea/
 .settings/
+specs/
+
+# Android and Gradle
+.gradle/
+build/
+app/build/
+local.properties
 
 # OS junk
 .DS_Store
