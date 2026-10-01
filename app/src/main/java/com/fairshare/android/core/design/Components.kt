@@ -23,6 +23,17 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.window.Dialog
+
 enum class FSButtonVariant {
     Primary,
     Secondary,
@@ -37,11 +48,13 @@ fun FSButton(
     variant: FSButtonVariant = FSButtonVariant.Primary,
     enabled: Boolean = true
 ) {
+    val buttonModifier = modifier.defaultMinSize(minHeight = 48.dp)
+
     when (variant) {
         FSButtonVariant.Primary -> {
             Button(
                 onClick = onClick,
-                modifier = modifier,
+                modifier = buttonModifier,
                 enabled = enabled,
                 shape = FairShareTheme.shapes.button,
                 colors = ButtonDefaults.buttonColors(
@@ -61,7 +74,7 @@ fun FSButton(
         FSButtonVariant.Secondary -> {
             OutlinedButton(
                 onClick = onClick,
-                modifier = modifier,
+                modifier = buttonModifier,
                 enabled = enabled,
                 shape = FairShareTheme.shapes.button,
                 border = BorderStroke(1.dp, FairShareTheme.colors.border),
@@ -82,7 +95,7 @@ fun FSButton(
         FSButtonVariant.Negative -> {
             Button(
                 onClick = onClick,
-                modifier = modifier,
+                modifier = buttonModifier,
                 enabled = enabled,
                 shape = FairShareTheme.shapes.button,
                 colors = ButtonDefaults.buttonColors(
@@ -103,6 +116,61 @@ fun FSButton(
 }
 
 @Composable
+fun FSConfirmDialog(
+    title: String,
+    message: String,
+    confirmText: String = "Confirm",
+    dismissText: String = "Cancel",
+    isDestructive: Boolean = true,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        FSCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 480.dp),
+            backgroundColor = FairShareTheme.colors.surfaceElevated
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = FairShareTheme.typography.title,
+                    color = if (isDestructive) FairShareTheme.colors.negative else FairShareTheme.colors.textPrimary
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = message,
+                    style = FairShareTheme.typography.body,
+                    color = FairShareTheme.colors.textSecondary
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    FSButton(
+                        text = dismissText,
+                        onClick = onDismiss,
+                        variant = FSButtonVariant.Secondary
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    FSButton(
+                        text = confirmText,
+                        onClick = onConfirm,
+                        variant = if (isDestructive) FSButtonVariant.Negative else FSButtonVariant.Primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun FSCard(
     modifier: Modifier = Modifier,
     backgroundColor: Color = FairShareTheme.colors.surface,
@@ -110,11 +178,13 @@ fun FSCard(
     content: @Composable () -> Unit
 ) {
     Surface(
-        modifier = modifier.border(
-            width = 1.dp,
-            color = borderColor,
-            shape = FairShareTheme.shapes.card
-        ),
+        modifier = modifier
+            .border(
+                width = 1.dp,
+                color = borderColor,
+                shape = FairShareTheme.shapes.card
+            )
+            .animateContentSize(),
         shape = FairShareTheme.shapes.card,
         color = backgroundColor
     ) {
@@ -125,8 +195,8 @@ fun FSCard(
 @Composable
 fun FSStatusBadge(
     text: String,
-    textColor: Color,
-    backgroundColor: Color,
+    textColor: Color = FairShareTheme.colors.accent,
+    backgroundColor: Color = FairShareTheme.colors.accentSoft,
     modifier: Modifier = Modifier
 ) {
     Box(

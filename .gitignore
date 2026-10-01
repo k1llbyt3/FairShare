@@ -6,6 +6,8 @@
 .idea/
 .settings/
 specs/
+docs/
+graphify-out/
 
 # Android and Gradle
 .gradle/

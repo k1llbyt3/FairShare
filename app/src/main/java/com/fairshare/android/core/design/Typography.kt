@@ -35,6 +35,13 @@ data class FSTypography(
         lineHeight = 24.sp,
         letterSpacing = 0.sp
     ),
+    val cardTitle: TextStyle = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.sp
+    ),
     val body: TextStyle = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -55,7 +62,8 @@ data class FSTypography(
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp
-    )
+    ),
+    val caption: TextStyle = metadata
 )
 
 val LocalFSTypography = staticCompositionLocalOf { FSTypography() }

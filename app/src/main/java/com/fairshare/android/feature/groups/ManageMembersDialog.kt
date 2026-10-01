@@ -34,7 +34,8 @@ import java.util.UUID
 fun ManageMembersDialog(
     members: List<Member>,
     onDismiss: () -> Unit,
-    onAddMember: (Member) -> Unit
+    onAddMember: (Member) -> Unit,
+    onInviteClick: (() -> Unit)? = null
 ) {
     var newMemberName by remember { mutableStateOf("") }
 
@@ -47,11 +48,24 @@ fun ManageMembersDialog(
                 .border(1.dp, FairShareTheme.colors.border, FairShareTheme.shapes.dialog)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "Group Members",
-                    style = FairShareTheme.typography.title,
-                    color = FairShareTheme.colors.textPrimary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Group Members",
+                        style = FairShareTheme.typography.title,
+                        color = FairShareTheme.colors.textPrimary
+                    )
+                    if (onInviteClick != null) {
+                        FSButton(
+                            text = "Invite",
+                            onClick = onInviteClick,
+                            variant = FSButtonVariant.Secondary
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(

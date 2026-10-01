@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -53,6 +54,7 @@ fun AddExpenseDialog(
     var selectedPayerId by remember { mutableStateOf(members.firstOrNull()?.id ?: "") }
     var paymentMode by remember { mutableStateOf(PaymentMode.ONLINE) }
     val involvedMembers = remember { mutableStateListOf<String>().apply { addAll(members.map { it.id }) } }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -60,6 +62,7 @@ fun AddExpenseDialog(
             color = FairShareTheme.colors.surfaceElevated,
             modifier = Modifier
                 .fillMaxWidth()
+                .imePadding()
                 .border(1.dp, FairShareTheme.colors.border, FairShareTheme.shapes.dialog)
         ) {
             Column(
@@ -240,8 +243,10 @@ fun AddExpenseDialog(
                     FSButton(
                         text = "Save",
                         onClick = {
+                            if (isSubmitting) return@FSButton
                             val parsedRupees = amountText.toDoubleOrNull() ?: 0.0
                             if (parsedRupees > 0 && description.isNotBlank()) {
+                                isSubmitting = true
                                 onSaveExpense(
                                     Expense(
                                         id = UUID.randomUUID().toString(),
@@ -256,7 +261,7 @@ fun AddExpenseDialog(
                         },
                         variant = FSButtonVariant.Primary,
                         modifier = Modifier.weight(1f),
-                        enabled = (amountText.toDoubleOrNull() ?: 0.0) > 0.0 && description.isNotBlank()
+                        enabled = !isSubmitting && (amountText.toDoubleOrNull() ?: 0.0) > 0.0 && description.isNotBlank()
                     )
                 }
             }
